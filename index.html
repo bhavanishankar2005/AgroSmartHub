@@ -202,7 +202,7 @@ function login(){
         return;
     }
     
-    fetch('https://light-rat-68.loca.lt/login', {
+    fetch('https://strong-pig-62.loca.lt/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password})
@@ -247,7 +247,7 @@ function register(){
         return;
     }
     
-    fetch('https://light-rat-68.loca.lt/register', {
+    fetch('https://strong-pig-62.loca.lt/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password, phonenumber: phone, role})
@@ -287,7 +287,7 @@ function sendResetToken(){
         return;
     }
     
-    fetch('https://light-rat-68.loca.lt/forgot-password', {
+    fetch('https://strong-pig-62.loca.lt/forgot-password', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username})
@@ -325,7 +325,7 @@ function adminLogin(){
         return;
     }
     
-    fetch('https://light-rat-68.loca.lt/admin/login', {
+    fetch('https://strong-pig-62.loca.lt/admin/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({password})
@@ -363,7 +363,7 @@ function resetPassword(){
         return;
     }
     
-    fetch('https://light-rat-68.loca.lt/reset-password', {
+    fetch('https://strong-pig-62.loca.lt/reset-password', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, token, password: newPass})
