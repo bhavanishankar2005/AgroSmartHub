@@ -29,7 +29,56 @@ if not os.path.exists(UPLOAD_FOLDER):
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
-CORS(app)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production')
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV', 'development').lower() == 'production'
+
+default_origins = 'https://bhavanishankar2005.github.io,http://localhost:5500,http://127.0.0.1:5500,http://localhost:8000,http://127.0.0.1:8000,http://localhost:5000,http://127.0.0.1:5000,null'
+cors_origins = [origin.strip() for origin in os.environ.get(
+    'CORS_ORIGINS',
+    default_origins
+).split(',') if origin.strip()]
+CORS(
+    app,
+    resources={r"/*": {"origins": cors_origins}},
+    supports_credentials=True,
+    allow_headers=['Content-Type', 'Authorization'],
+    methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+)
+
+@app.before_request
+def handle_preflight():
+    if request.method == 'OPTIONS':
+        response = jsonify({'ok': True})
+        response.status_code = 200
+        origin = request.headers.get('Origin', '')
+        if origin:
+            normalized_origin = origin.strip()
+            if normalized_origin in cors_origins or normalized_origin == 'null' or normalized_origin.startswith(('http://localhost', 'http://127.0.0.1', 'https://bhavanishankar2005.github.io')):
+                response.headers['Access-Control-Allow-Origin'] = normalized_origin
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Vary'] = 'Origin'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        return response
+
+@app.after_request
+def add_security_headers(response):
+    origin = request.headers.get('Origin', '')
+    if origin:
+        normalized_origin = origin.strip()
+        if normalized_origin in cors_origins or normalized_origin == 'null' or normalized_origin.startswith(('http://localhost', 'http://127.0.0.1', 'https://bhavanishankar2005.github.io')):
+            response.headers['Access-Control-Allow-Origin'] = normalized_origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Vary'] = 'Origin'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    return response
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -157,17 +206,18 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             """)
         conn.commit()
-        
-        # Insert test user if not exists
-        with conn.cursor() as cur:
-            cur.execute("SELECT id FROM users WHERE username = 'testuser'")
-            if not cur.fetchone():
-                hashed_pass = generate_password_hash('test123')
-                cur.execute(
-                    "INSERT INTO users (username, password, role, phonenumber) VALUES (%s, %s, %s, %s)",
-                    ('testuser', hashed_pass, 'buyer', '9876543210')
-                )
-                conn.commit()
+
+        # Insert demo user only when explicitly enabled.
+        if os.environ.get('CREATE_DEMO_USER', 'false').lower() in {'1', 'true', 'yes', 'on'}:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE username = 'testuser'")
+                if not cur.fetchone():
+                    hashed_pass = generate_password_hash(os.environ.get('DEMO_USER_PASSWORD', 'test123'))
+                    cur.execute(
+                        "INSERT INTO users (username, password, role, phonenumber) VALUES (%s, %s, %s, %s)",
+                        ('testuser', hashed_pass, 'buyer', '9876543210')
+                    )
+                    conn.commit()
     except Exception as e:
         print(f"Database init error: {e}")
     finally:
@@ -770,7 +820,9 @@ def serve_image(filename):
 
 # --- ADMIN ENDPOINTS ---
 
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')  # Change this to your secure password
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+if not ADMIN_PASSWORD:
+    ADMIN_PASSWORD = 'admin123' if os.environ.get('FLASK_ENV', 'development').lower() != 'production' else 'change-me-in-production'
 
 def is_admin_token(token, conn):
     """Check if a token belongs to an admin user"""
@@ -788,16 +840,16 @@ def is_admin_token(token, conn):
 
 @app.route('/admin/test-password', methods=['POST'])
 def test_admin_password():
-    """Test admin password (for debugging)"""
+    """Disable password probing in production."""
+    if os.environ.get('ALLOW_ADMIN_DEBUG', 'false').lower() not in {'1', 'true', 'yes', 'on'}:
+        return jsonify({'error': 'forbidden'}), 403
+
     data = request.get_json() or {}
     password = data.get('password')
-    
     return jsonify({
         'password_received': password,
-        'admin_password_set': ADMIN_PASSWORD,
         'match': password == ADMIN_PASSWORD,
         'password_length': len(password) if password else 0,
-        'admin_password_length': len(ADMIN_PASSWORD)
     }), 200
 
 @app.route('/admin/login', methods=['POST'])
