@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌾 AgroSmart Hub</title>
+
+<style>
+body{
+    margin:0;
+    height:100vh;
+    font-family:'Segoe UI', sans-serif;
+    background:
+        linear-gradient(to top, rgba(255,153,51,0.6), rgba(46,125,50,0.7)),
+        url("https://images.unsplash.com/photo-1523741543316-beb7fc7023d8");
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+/* ===== CARD ===== */
+.box{
+    width:390px;
+    background:rgba(255,255,255,0.92);
+    padding:32px;
+    border-radius:22px;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35);
+    text-align:center;
+}
+
+/* ===== TEXT ===== */
+.logo{
+    font-size:38px;
+}
+h2{
+    color:#2e7d32;
+    margin:10px 0 5px;
+}
+.subtitle{
+    font-size:14px;
+    color:#666;
+    margin-bottom:22px;
+}
+
+/* ===== INPUT ===== */
+input, select{
+    width:100%;
+    padding:14px;
+    margin-bottom:14px;
+    border-radius:12px;
+    border:1px solid #c8e6c9;
+    font-size:15px;
+}
+
+/* ===== BUTTON ===== */
+button{
+    width:100%;
+    padding:14px;
+    background:linear-gradient(135deg,#ff9800,#4caf50);
+    color:#fff;
+    font-size:16px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.3s;
+}
+button:hover{
+    transform:scale(1.05);
+}
+
+/* ===== LINKS ===== */
+.link{
+    margin-top:10px;
+    font-size:14px;
+}
+.link a{
+    color:#ff6f00;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* ===== MSG ===== */
+.error{ color:#d32f2f; font-size:14px; display:none; }
+.success{ color:#2e7d32; font-size:14px; display:none; }
+
+.role-box button{ margin-bottom:12px; }
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<!-- ROLE -->
+<div id="roleBox" class="role-box" style="display:none;">
+    <div class="logo">🌾</div>
+    <h2>Select Role</h2>
+    <p class="subtitle">Who are you?</p>
+    <button onclick="goBuyer()">🛒 Buyer Dashboard</button>
+    <button onclick="goFarmer()">🚜 Farmer Dashboard</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginBox">
+    <div class="logo">🌾</div>
+    <h2>AgroSmart Hub</h2>
+    <p class="subtitle">Empowering Farmers • Connecting Markets</p>
+
+    <input type="text" id="loginUser" placeholder="👤 Username">
+    <input type="password" id="loginPass" placeholder="🔒 Password">
+    <p class="error" id="loginError"></p>
+
+    <button onclick="login()">🔐 Login</button>
+    <div class="link"><a onclick="showForgot()">🔑 Forgot Password?</a></div>
+    <div class="link">New user? <a onclick="showRegister()">🌱 Create Account</a></div>
+    <div class="link"><a onclick="showAdminLogin()">⚙️ Admin Login</a></div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLoginBox" style="display:none;">
+    <div class="logo">⚙️</div>
+    <h2>Admin Dashboard</h2>
+    <p class="subtitle">Administrator Access Only</p>
+
+    <input type="password" id="adminPass" placeholder="🔒 Admin Password">
+    <p class="error" id="adminError"></p>
+
+    <button onclick="adminLogin()">🔐 Login as Admin</button>
+    <div class="link"><a onclick="showLogin()">⬅ Back to Login</a></div>
+</div>
+
+<!-- REGISTER -->
+<div id="registerBox" style="display:none;">
+    <div class="logo">🌾</div>
+    <h2>Create Account</h2>
+    <p class="subtitle">Start your agro journey</p>
+
+    <input type="text" id="regUser" placeholder="👤 Username">
+    <input type="password" id="regPass" placeholder="🔒 Password">
+    <input type="text" id="regPhone" placeholder="📞 Phone Number">
+    <select id="regRole">
+        <option value="">👥 Select Role</option>
+        <option value="farmer">🚜 Farmer</option>
+        <option value="buyer">🛒 Buyer</option>
+    </select>
+
+    <p class="error" id="regError"></p>
+    <p class="success" id="regSuccess"></p>
+
+    <button id="regBtn" onclick="register()">✅ Register</button>
+    <div class="link">Already have an account? <a onclick="showLogin()">🔐 Login</a></div>
+</div>
+
+<!-- FORGOT -->
+<div id="forgotBox" style="display:none;">
+    <div class="logo">🔑</div>
+    <h2>Forgot Password</h2>
+    <input type="text" id="forgotUser" placeholder="👤 Username">
+    <p class="error" id="forgotError"></p>
+    <p class="success" id="forgotSuccess"></p>
+    <button onclick="sendResetToken()">📩 Send Reset Token</button>
+    <div class="link"><a onclick="showLogin()">⬅ Back to Login</a></div>
+</div>
+
+<!-- RESET -->
+<div id="resetBox" style="display:none;">
+    <div class="logo">🔁</div>
+    <h2>Reset Password</h2>
+    <input type="text" id="resetUser" placeholder="👤 Username">
+    <input type="text" id="resetToken" placeholder="🔑 Reset Token">
+    <input type="password" id="newPass" placeholder="🔒 New Password">
+    <p class="error" id="resetError"></p>
+    <p class="success" id="resetSuccess"></p>
+    <button onclick="resetPassword()">♻ Reset Password</button>
+    <div class="link"><a onclick="showLogin()">⬅ Back to Login</a></div>
+</div>
+
+</div>
+
+<script>
+function goBuyer(){location.href="project.html";}
+function goFarmer(){location.href="farmer.html";}
+function goAdmin(){location.href="admin.html";}
+function hideAll(ids){ids.forEach(i=>document.getElementById(i).style.display="none");}
+function showRegister(){hideAll(['loginBox','roleBox','forgotBox','resetBox','adminLoginBox']);document.getElementById('registerBox').style.display="block";}
+function showLogin(){hideAll(['registerBox','roleBox','forgotBox','resetBox','adminLoginBox']);document.getElementById('loginBox').style.display="block";}
+function showForgot(){hideAll(['registerBox','loginBox','roleBox','resetBox','adminLoginBox']);document.getElementById('forgotBox').style.display="block";}
+function showAdminLogin(){hideAll(['loginBox','registerBox','roleBox','forgotBox','resetBox']);document.getElementById('adminLoginBox').style.display="block";}
+
+function login(){
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value.trim();
+    const errorEl = document.getElementById('loginError');
+    
+    errorEl.style.display = 'none';
+    
+    if(!username || !password){
+        errorEl.textContent = 'Please enter username and password';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role);
+            hideAll(['loginBox','registerBox','forgotBox','resetBox']);
+            document.getElementById('roleBox').style.display = 'block';
+        } else {
+            errorEl.textContent = data.error || 'Login failed';
+            errorEl.style.display = 'block';
+        }
+    })
+    .catch(e => {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+    });
+}
+
+function register(){
+    const username = document.getElementById('regUser').value.trim();
+    const password = document.getElementById('regPass').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const role = document.getElementById('regRole').value;
+    const errorEl = document.getElementById('regError');
+    const successEl = document.getElementById('regSuccess');
+    const btn = document.getElementById('regBtn');
+    
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Registering...';
+    
+    if(!username || !password || !phone || !role){
+        errorEl.textContent = 'Please fill all fields';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '✅ Register';
+        return;
+    }
+    
+    fetch('http://localhost:5000/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password, phonenumber: phone, role})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            successEl.textContent = 'Registration successful! Login to continue.';
+            successEl.style.display = 'block';
+            setTimeout(() => showLogin(), 2000);
+        } else {
+            errorEl.textContent = data.error || 'Registration failed';
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = '✅ Register';
+        }
+    })
+    .catch(e => {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '✅ Register';
+    });
+}
+
+function sendResetToken(){
+    const username = document.getElementById('forgotUser').value.trim();
+    const errorEl = document.getElementById('forgotError');
+    const successEl = document.getElementById('forgotSuccess');
+    
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    
+    if(!username){
+        errorEl.textContent = 'Please enter username';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    fetch('http://localhost:5000/forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            successEl.textContent = 'Reset token sent! Check your email.';
+            successEl.style.display = 'block';
+            setTimeout(() => showReset(), 2000);
+        } else {
+            errorEl.textContent = data.error || 'Error sending token';
+            errorEl.style.display = 'block';
+        }
+    })
+    .catch(e => {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+    });
+}
+function showReset(){
+    hideAll(['registerBox','loginBox','forgotBox','adminLoginBox']);
+    document.getElementById('resetBox').style.display="block";
+}
+
+function adminLogin(){
+    const password = document.getElementById('adminPass').value.trim();
+    const errorEl = document.getElementById('adminError');
+    
+    errorEl.style.display = 'none';
+    
+    if(!password){
+        errorEl.textContent = 'Please enter admin password';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    fetch('http://localhost:5000/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            localStorage.setItem('adminToken', data.token);
+            localStorage.setItem('role', 'admin');
+            location.href = 'admin.html';
+        } else {
+            errorEl.textContent = data.error || 'Invalid password';
+            errorEl.style.display = 'block';
+        }
+    })
+    .catch(e => {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+    });
+}
+
+function resetPassword(){
+    const username = document.getElementById('resetUser').value.trim();
+    const token = document.getElementById('resetToken').value.trim();
+    const newPass = document.getElementById('newPass').value.trim();
+    const errorEl = document.getElementById('resetError');
+    const successEl = document.getElementById('resetSuccess');
+    
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    
+    if(!username || !token || !newPass){
+        errorEl.textContent = 'Please fill all fields';
+        errorEl.style.display = 'block';
+        return;
+    }
+    
+    fetch('http://localhost:5000/reset-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, token, password: newPass})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            successEl.textContent = 'Password reset successful! Login now.';
+            successEl.style.display = 'block';
+            setTimeout(() => showLogin(), 2000);
+        } else {
+            errorEl.textContent = data.error || 'Reset failed';
+            errorEl.style.display = 'block';
+        }
+    })
+    .catch(e => {
+        errorEl.textContent = 'Connection error';
+        errorEl.style.display = 'block';
+    });
+}
+</script>
+
+</body>
+</html>

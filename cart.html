@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌾Your Cart - 🌾AgroSmart Hub</title>
+    <style>
+        body{font-family:Arial, sans-serif;background:#f5f5f5;margin:0;padding:0}
+        header{background:#2e7d32;color:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
+        .container{max-width:900px;margin:20px auto;padding:20px;background:#fff;border-radius:8px}
+        .cart-item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eee}
+        .item-left{flex:1}
+        .qty{width:80px}
+        .actions button{margin-left:8px}
+        .total{font-weight:bold;text-align:right;margin-top:12px}
+        .empty{padding:40px;text-align:center;color:#666}
+    </style>
+</head>
+<body>
+    <header>
+        <div>🌾 Agro Smart Hub</div>
+        <nav>
+            <a href="project.html" style="color:#fff;text-decoration:none;margin-right:12px">Products</a>
+            <a href="orders.html" style="color:#fff;text-decoration:none;margin-right:12px">Orders</a>
+            <button onclick="logout()" style="background:#e74c3c;border:none;color:#fff;padding:8px 12px;border-radius:4px;cursor:pointer">Logout</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>🌾Your Cart</h2>
+        <div id="cartList"></div>
+        <div class="total" id="cartTotal"></div>
+        <div style="text-align:right;margin-top:12px">
+            <button id="checkoutBtn">Checkout</button>
+        </div>
+
+        <div id="checkoutForm" style="display:none;margin-top:16px;padding:12px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">
+            <h3 style="margin:0 0 8px 0">Checkout</h3>
+            <div style="margin-bottom:8px">
+                <label>Delivery address</label><br>
+                <textarea id="deliveryAddress" rows="3" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px"></textarea>
+            </div>
+            <div style="margin-bottom:8px">
+                <label>Contact phone (optional)</label><br>
+                <input id="contactPhone" type="text" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px" placeholder="e.g. +919876543210">
+            </div>
+            <div style="text-align:right">
+                <button id="cancelCheckout" style="margin-right:8px;">Cancel</button>
+                <button id="submitCheckout">Place Order</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const API_URL = "http://localhost:5000";
+
+function logout(){ localStorage.clear(); window.location.href = 'login.html'; }
+function getToken(){ return localStorage.getItem('token'); }
+
+async function loadCart(){
+    const token = getToken();
+    const listEl = document.getElementById('cartList');
+    listEl.innerHTML = '<div class="empty">Loading...</div>';
+
+    if(token){
+        try{
+            const res = await fetch(`${API_URL}/cart`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if(res.ok){
+                const items = await res.json();
+                renderCart(items, true);
+                return;
+            }
+        }catch(e){ console.warn('Server cart load failed', e); }
+    }
+
+    // fallback to localStorage
+    const raw = localStorage.getItem('cart');
+    const items = raw ? JSON.parse(raw) : [];
+    renderCart(items, false);
+}
+
+function renderCart(items, isServer){
+    const listEl = document.getElementById('cartList');
+    listEl.innerHTML = '';
+    if(!items || items.length === 0){
+        listEl.innerHTML = '<div class="empty">Your cart is empty</div>';
+        document.getElementById('cartTotal').textContent = '';
+        return;
+    }
+
+    let total = 0;
+    items.forEach(it => {
+        const row = document.createElement('div'); row.className = 'cart-item';
+        const left = document.createElement('div'); left.className = 'item-left';
+        left.innerHTML = `<div><strong>${escapeHtml(it.productname)}</strong></div><div>₹${parseFloat(it.price).toFixed(2)}</div>`;
+        const qty = document.createElement('input'); qty.type = 'number'; qty.min = 1; qty.value = it.quantity; qty.className = 'qty';
+        qty.addEventListener('change', () => updateQuantity(it, parseInt(qty.value), isServer));
+
+        const actions = document.createElement('div'); actions.className = 'actions';
+        const removeBtn = document.createElement('button'); removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => removeItem(it, isServer));
+        actions.appendChild(removeBtn);
+
+        row.appendChild(left);
+        row.appendChild(qty);
+        row.appendChild(actions);
+        listEl.appendChild(row);
+
+        total += parseFloat(it.price) * parseInt(it.quantity);
+    });
+
+    document.getElementById('cartTotal').textContent = `Total: ₹${total.toFixed(2)}`;
+}
+
+function escapeHtml(text){ if(!text) return ''; return text.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'})[m]); }
+
+async function updateQuantity(item, qty, isServer){
+    if(qty <= 0) return;
+    const token = getToken();
+    if(isServer && token && item.item_id){
+        try{
+            const res = await fetch(`${API_URL}/cart/item/${item.item_id}`, { method: 'PUT', headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantity: qty }) });
+            if(res.ok){ loadCart(); return; }
+        }catch(e){ console.warn('Update failed', e); }
+    }
+
+    // local update
+    try{
+        const raw = localStorage.getItem('cart');
+        const cart = raw ? JSON.parse(raw) : [];
+        const idx = cart.findIndex(i => (i.product_id && item.product_id && i.product_id === item.product_id) || i.productname === item.productname);
+        if(idx >= 0){ cart[idx].quantity = qty; localStorage.setItem('cart', JSON.stringify(cart)); loadCart(); }
+    }catch(e){ console.warn(e); }
+}
+
+async function removeItem(item, isServer){
+    const token = getToken();
+    if(isServer && token && item.item_id){
+        try{
+            const res = await fetch(`${API_URL}/cart/item/${item.item_id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if(res.ok){ loadCart(); return; }
+        }catch(e){ console.warn('Remove failed', e); }
+    }
+
+    // local remove
+    try{
+        const raw = localStorage.getItem('cart');
+        const cart = raw ? JSON.parse(raw) : [];
+        const newCart = cart.filter(i => !((i.product_id && item.product_id && i.product_id === item.product_id) || i.productname === item.productname));
+        localStorage.setItem('cart', JSON.stringify(newCart));
+        loadCart();
+    }catch(e){ console.warn(e); }
+}
+
+// Show checkout form when user clicks checkout
+document.getElementById('checkoutBtn').addEventListener('click', () => {
+    document.getElementById('checkoutForm').style.display = 'block';
+    window.scrollTo({ top: document.getElementById('checkoutForm').offsetTop - 20, behavior: 'smooth' });
+});
+
+document.getElementById('cancelCheckout').addEventListener('click', () => {
+    document.getElementById('checkoutForm').style.display = 'none';
+});
+
+document.getElementById('submitCheckout').addEventListener('click', async () => {
+    const address = document.getElementById('deliveryAddress').value || '';
+    const phone = document.getElementById('contactPhone').value || '';
+    if(!address.trim() || address.trim().length < 10){
+        alert('Please enter a valid delivery address (min 10 characters).');
+        return;
+    }
+
+    const token = getToken();
+    if(token){
+        try{
+            const res = await fetch(`${API_URL}/cart/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ delivery_address: address.trim(), contact_phone: phone.trim() })
+            });
+            const data = await res.json();
+            if(res.ok){
+                document.getElementById('checkoutForm').style.display = 'none';
+                alert('Checkout successful. Order ID: ' + (data.order_id || 'unknown'));
+                // open printable receipt in new tab
+                const oid = data.order_id;
+                if(oid){
+                    const url = `receipt.html?order=${encodeURIComponent(oid)}`;
+                    window.open(url, '_blank');
+                }
+                loadCart();
+                return;
+            }
+            alert('Checkout failed: ' + (data.error || 'unknown'));
+            return;
+        }catch(e){ console.warn(e); alert('Checkout error'); }
+    } else {
+        // local checkout fallback
+        localStorage.removeItem('cart');
+        document.getElementById('checkoutForm').style.display = 'none';
+        alert('Checkout simulated (local cart cleared).');
+        loadCart();
+    }
+});
+
+// initial load
+loadCart();
+</script>
+</body>
+</html>

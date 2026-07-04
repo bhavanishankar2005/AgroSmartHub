@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌾AgroSmart Hub- Farm Product Marketplace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f5f5f5;
+        }
+
+        header {
+            background-color: #2e7d32;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        header nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background:#e74c3c;
+            padding:8px 15px;
+            border:none;
+            color:#fff;
+            cursor:pointer;
+            border-radius:4px;
+            font-size:14px;
+        }
+
+        .logout-btn:hover {
+            background:#c0392b;
+        }
+
+        .hero {
+            background-color: #81c784;
+            color: white;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .hero .btn {
+            padding: 10px 20px;
+            background-color: #2e7d32;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .products-section {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .products-section h2 {
+            margin-bottom: 30px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .product-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+
+        .product-card h3 {
+            margin: 15px 0 8px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .product-card p {
+            color: #666;
+            font-size: 14px;
+            margin: 8px 0;
+            text-align: left;
+        }
+
+        .product-price {
+            color: #2e7d32;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .product-quantity {
+            color: #e67e22;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .product-card button {
+            margin-top: 12px;
+            padding: 10px 16px;
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .product-card button:hover {
+            background-color: #1b5e20;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #2e7d32;
+            color: white;
+            margin-top: 40px;
+        }
+
+        #searchBar {
+            width: 80%;
+            max-width: 400px;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #aaa;
+            margin-bottom: 25px;
+            font-size: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .no-products {
+            grid-column: 1 / -1;
+            padding: 40px;
+            background-color: white;
+            border-radius: 8px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🌾 Agro Smart Hub</div>
+        <nav>
+            <ul>
+                <li><a href="#products">Products</a></li>
+                <li><a href="cart.html">Cart</a></li>
+                <li><a href="orders.html">Orders</a></li>
+                <li><span id="userDisplay"></span></li>
+                <li><button class="logout-btn" onclick="logout()">Logout</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>🌾 Fresh Produce, Direct from Farmers</h1>
+        <p>Buy premium farm products online with ease</p>
+        <a href="#products" class="btn">Browse Products</a>
+    </section>
+
+    <section id="products" class="products-section">
+        <h2>Available Products</h2>
+
+        <input type="text" id="searchBar" placeholder="Search products by name or description...">
+
+        <div class="products-grid" id="products-grid">
+            <div class="loading">Loading products...</div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026🌾 Agro Smart Hub. All Rights Reserved. | Fresh from Farm to Table</p>
+    </footer>
+
+    <script>
+        const API_URL = "http://localhost:5000";
+        let allProducts = [];
+
+        function logout(){
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        function getToken(){
+            return localStorage.getItem('token');
+        }
+
+        function displayUsername(){
+            const username = localStorage.getItem('username');
+            if(username){
+                document.getElementById('userDisplay').textContent = `👤 ${username}`;
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_URL}/products`, {
+                    method: 'GET',
+                    headers: {'Authorization': `Bearer ${getToken()}`}
+                });
+                
+                if(!response.ok) throw new Error("Failed to load products");
+                
+                allProducts = await response.json();
+                renderProducts(allProducts);
+            } catch(e) {
+                console.error("Error loading products:", e);
+                document.getElementById('products-grid').innerHTML = `<div class="no-products">Failed to load products. Please try again later. (${e.message})</div>`;
+            }
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            if(list.length === 0){
+                grid.innerHTML = '<div class="no-products">No products available at the moment</div>';
+                return;
+            }
+
+            list.forEach(product => {
+                const imageUrl = product.image_filename 
+                    ? `${API_URL}/uploads/${product.image_filename}` 
+                    : 'https://via.placeholder.com/250x200?text=No+Image';
+                
+                const card = document.createElement('div');
+                card.classList.add('product-card');
+
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="${escapeHtml(product.productname)}" onerror="this.src='https://via.placeholder.com/250x200?text=No+Image'">
+                    <h3>${escapeHtml(product.productname)}</h3>
+                    <p>${escapeHtml(product.productdescription)}</p>
+                    <div class="product-price">₹${parseFloat(product.price).toFixed(2)}</div>
+                    <div class="product-quantity">
+                        ${product.quantity > 0 ? `Stock: ${product.quantity} units` : '<span style="color:#e74c3c;">Out of Stock</span>'}
+                    </div>
+                `;
+
+                // create button element and attach click handler to avoid inline-attribute quoting issues
+                const btn = document.createElement('button');
+                btn.textContent = product.quantity > 0 ? 'Add to Cart' : 'Out of Stock';
+                btn.disabled = product.quantity <= 0;
+                btn.addEventListener('click', () => {
+                    addToCart(product.product_id != null ? product.product_id : null, product.productname, parseFloat(product.price));
+                });
+
+                card.appendChild(btn);
+                grid.appendChild(card);
+            });
+        }
+
+        function filterProducts() {
+            const query = document.getElementById("searchBar").value.toLowerCase();
+
+            const filtered = allProducts.filter(product =>
+                product.productname.toLowerCase().includes(query) ||
+                product.productdescription.toLowerCase().includes(query)
+            );
+
+            renderProducts(filtered);
+        }
+
+        function addToCart(product_id, name, price){
+            // name may come in as a quoted JSON string when invoked inline; ensure it's a string
+            try { if(typeof name !== 'string') name = String(name); } catch(e){}
+
+            const unitPrice = parseFloat(price) || 0;
+            const quantityStr = prompt(`How many units of "${name}" do you want to add? (Price: ₹${unitPrice.toFixed(2)} per unit)`);
+            const quantity = quantityStr ? parseInt(quantityStr, 10) : 0;
+            if(!quantity || quantity <= 0){
+                return;
+            }
+
+            // Save to localStorage cart (resilient parsing)
+            try{
+                const raw = localStorage.getItem('cart');
+                let cart = [];
+                try {
+                    cart = raw ? JSON.parse(raw) : [];
+                    if(!Array.isArray(cart)) cart = [];
+                } catch(err) {
+                    cart = [];
+                }
+
+                const existing = cart.find(i => (i.product_id != null && product_id != null && i.product_id === product_id) || i.productname === name);
+                if(existing){
+                    existing.quantity = (existing.quantity || 0) + quantity;
+                } else {
+                    cart.push({product_id: product_id, productname: name, price: unitPrice, quantity: quantity});
+                }
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch(e){
+                console.warn('Could not save cart locally', e);
+            }
+
+            // If logged in, also send to server cart (best-effort)
+            const token = getToken();
+            if(token){
+                fetch(`${API_URL}/cart`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ product_id: product_id, productname: name, price: unitPrice, quantity: quantity })
+                }).then(res => {
+                    if(!res.ok){
+                        console.warn('Server cart add failed');
+                    }
+                }).catch(err => console.warn('Cart sync error', err));
+            }
+
+            alert(`✅ Added ${quantity} unit(s) of "${name}" to cart!\nTotal: ₹${(unitPrice * quantity).toFixed(2)}`);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            displayUsername();
+            loadProducts();
+        });
+
+        document.getElementById('searchBar').addEventListener('keyup', filterProducts);
+    </script>
+</body>
+</html>

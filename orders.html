@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Your Orders - 🌾AgroSmart Hub</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0}
+    header{background:#2e7d32;color:#fff;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+    .container{max-width:900px;margin:20px auto;padding:20px;background:#fff;border-radius:6px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+    th{background:#fafafa}
+    .empty{padding:30px;text-align:center;color:#666}
+    .actions button{margin-right:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <div>🌾 Agro Smart Hub</div>
+    <nav>
+      <a href="project.html" style="color:#fff;text-decoration:none;margin-right:12px">Products</a>
+      <a href="cart.html" style="color:#fff;text-decoration:none;margin-right:12px">Cart</a>
+      <button onclick="logout()" style="background:#e74c3c;border:none;color:#fff;padding:8px 8px;border-radius:4px;cursor:pointer">Logout</button>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h2>🌾Your Orders</h2>
+    <div id="ordersList"></div>
+  </div>
+
+<script>
+const API_URL = 'http://localhost:5000';
+function logout(){ localStorage.clear(); window.location.href='login.html'; }
+function getToken(){ return localStorage.getItem('token'); }
+
+async function loadOrders(){
+  const el = document.getElementById('ordersList');
+  const token = getToken();
+  if(!token){ el.innerHTML = '<div class="empty">Please <a href="login.html">login</a> to view your orders.</div>'; return; }
+  el.innerHTML = '<div class="empty">Loading orders...</div>';
+  try{
+    const res = await fetch(`${API_URL}/orders`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if(!res.ok){ const d = await res.json().catch(()=>({})); el.innerHTML = `<div class="empty">Error: ${d.error||res.statusText}</div>`; return; }
+    const rows = await res.json();
+    if(!rows || rows.length === 0){ el.innerHTML = '<div class="empty">No orders yet.</div>'; return; }
+
+    const table = document.createElement('table');
+    table.innerHTML = `<thead><tr><th>Order #</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      const viewUrl = `receipt.html?order=${encodeURIComponent(r.order_id)}`;
+      tr.innerHTML = `<td>${r.order_id}</td><td>₹${parseFloat(r.total).toFixed(2)}</td><td>${escapeHtml(r.status)}</td><td>${r.created_at}</td><td class="actions"><button onclick="window.open('${viewUrl}','_blank')">View</button></td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    el.innerHTML = '';
+    el.appendChild(table);
+  }catch(e){ el.innerHTML = '<div class="empty">Network error</div>'; }
+}
+
+function escapeHtml(text){ if(!text) return ''; return text.replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m])); }
+
+loadOrders();
+</script>
+</body>
+</html>
