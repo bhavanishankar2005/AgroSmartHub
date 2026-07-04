@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Receipt -🌾 AgroSmart Hub</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#222}
+    .header{display:flex;justify-content:space-between;align-items:center}
+    .items{margin-top:16px;border-collapse:collapse;width:100%}
+    .items th, .items td{border:1px solid #ddd;padding:8px}
+    .items th{background:#f5f5f5}
+    .total{margin-top:12px;text-align:right;font-weight:bold}
+    .print-btn{position:fixed;right:20px;top:20px}
+  </style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">Print</button>
+  <div id="content">
+    <div class="header">
+      <div>
+        <h2>🌾Agro Smart Hub</h2>
+        <div>Receipt</div>
+      </div>
+      <div id="meta"></div>
+    </div>
+
+    <div id="address" style="margin-top:12px"></div>
+
+    <table class="items" id="itemsTable">
+      <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Line</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="total" id="total"></div>
+  </div>
+
+<script>
+const API_URL = 'http://localhost:5000';
+function getToken(){ return localStorage.getItem('token'); }
+
+function q(name){ const params = new URLSearchParams(window.location.search); return params.get(name); }
+
+async function loadReceipt(){
+  const oid = q('order');
+  if(!oid){ document.getElementById('content').innerHTML = '<p>Order id missing</p>'; return; }
+  const token = getToken();
+  try{
+    const res = await fetch(`${API_URL}/orders/${encodeURIComponent(oid)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if(!res.ok){ const d = await res.json().catch(()=>({})); document.getElementById('content').innerHTML = `<p>Error loading order: ${d.error||res.statusText}</p>`; return; }
+    const data = await res.json();
+    const order = data.order;
+    const items = data.items || [];
+
+    document.getElementById('meta').innerHTML = `Order #: <strong>${order.order_id}</strong><br/>Date: ${order.created_at}`;
+    document.getElementById('address').innerHTML = `<strong>Delivery address</strong><div>${order.delivery_address.replace(/\n/g,'<br/>')}</div><div>Contact: ${order.contact_phone || 'N/A'}</div>`;
+
+    const tbody = document.querySelector('#itemsTable tbody'); tbody.innerHTML = '';
+    let total = 0;
+    items.forEach(it => {
+      const line = (parseFloat(it.price) * parseInt(it.quantity)).toFixed(2);
+      total += parseFloat(line);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(it.productname)}</td><td>₹${parseFloat(it.price).toFixed(2)}</td><td>${it.quantity}</td><td>₹${line}</td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById('total').textContent = `Total: ₹${total.toFixed(2)}`;
+  }catch(e){ document.getElementById('content').innerHTML = '<p>Network error</p>'; }
+}
+
+function escapeHtml(text){ if(!text) return ''; return text.replace(/[&<>"]+/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]||m)); }
+
+loadReceipt();
+</script>
+</body>
+</html>

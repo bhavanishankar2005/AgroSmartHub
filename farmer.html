@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🌾AgroSmartHub - Farmer Panel</title>
+    <style>
+        body{
+            font-family: Arial, sans-serif;
+            background:#f5f5f5;
+            margin:0;
+            padding:0;
+        }
+
+        header{
+            background:#2ecc71;
+            color:#fff;
+            padding:15px;
+            text-align:center;
+            font-size:28px;
+            font-weight:bold;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        }
+
+        .logout-btn {
+            background:#e74c3c;
+            padding:8px 15px;
+            border:none;
+            color:#fff;
+            cursor:pointer;
+            border-radius:4px;
+            font-size:14px;
+        }
+
+        .logout-btn:hover {
+            background:#c0392b;
+        }
+
+        .container{
+            width:90%;
+            max-width:900px;
+            margin:auto;
+            margin-top:20px;
+        }
+
+        #addProductForm{
+            background:#fff;
+            padding:20px;
+            border-radius:5px;
+            box-shadow:0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        input, textarea{
+            width:100%;
+            padding:10px;
+            margin-bottom:15px;
+            border-radius:4px;
+            border:1px solid #ccc;
+            font-size:15px;
+            box-sizing: border-box;
+        }
+
+        button{
+            padding:10px 12px;
+            background:#27ae60;
+            color:#fff;
+            border:none;
+            cursor:pointer;
+            font-size:16px;
+            border-radius:5px;
+        }
+
+        button:hover{
+            background:#219150;
+        }
+
+        .product-card{
+            background:#fff;
+            padding:15px;
+            border-radius:5px;
+            margin-top:15px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.08);
+            display:flex;
+            gap:15px;
+            border-left:4px solid #ccc;
+        }
+
+        .product-card.pending {
+            border-left-color: #f39c12;
+            background: #fffbf0;
+        }
+
+        .product-card.approved {
+            border-left-color: #27ae60;
+            background: #f0fff4;
+        }
+
+        .product-card.rejected {
+            border-left-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .product-image {
+            width:100px;
+            height:100px;
+            border-radius:5px;
+            object-fit:cover;
+            flex-shrink:0;
+        }
+
+        .product-info {
+            flex:1;
+        }
+
+        .title{
+            font-size:20px;
+            margin-bottom:5px;
+            font-weight:bold;
+        }
+
+        .price{
+            color:#e67e22;
+            font-weight:bold;
+            margin:5px 0;
+        }
+
+        .edit-btn{
+            background:#2980b9;
+            font-size:14px;
+            padding:6px 10px;
+            margin-right:5px;
+        }
+
+        .edit-btn:hover{
+            background:#1f6691;
+        }
+
+        .delete-btn{
+            background:#e74c3c;
+            font-size:14px;
+            padding:6px 10px;
+        }
+
+        .delete-btn:hover{
+            background:#c0392b;
+        }
+
+        .error { color:red; margin-bottom:10px; display:none;}
+        .success { color:green; margin-bottom:10px; display:none;}
+
+        .image-preview {
+            width:100px;
+            height:100px;
+            border:2px solid #ddd;
+            border-radius:5px;
+            object-fit:cover;
+            margin-top:10px;
+            display:none;
+        }
+
+        .image-input-label {
+            display:block;
+            margin-bottom:10px;
+            color:#333;
+            font-weight:bold;
+        }
+
+        .approval-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .approval-pending {
+            background: #f39c12;
+            color: white;
+        }
+
+        .approval-approved {
+            background: #27ae60;
+            color: white;
+        }
+
+        .approval-rejected {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .approval-comment {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>🌾AgroSmartHub - Farmer Panel</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+    <h2 id="formTitle">Add New Product 🧑‍🌾</h2>
+
+    <p class="error" id="formError"></p>
+    <p class="success" id="formSuccess"></p>
+
+    <form id="addProductForm" enctype="multipart/form-data">
+        <input type="text" id="pname" placeholder="Product Name" required>
+        <textarea id="pdesc" placeholder="Product Description" required></textarea>
+        <input type="number" id="pprice" placeholder="Price (₹)" step="0.01" required>
+        <input type="number" id="pcount" placeholder="Quantity " required>
+        <input type="text" id="pphone" placeholder="Seller Phone (optional)">
+        
+        <label class="image-input-label">Product Image (Optional)</label>
+        <input type="file" id="pimage" accept="image/*">
+        <img id="imagePreview" class="image-preview" alt="Preview">
+        
+        <button type="submit" id="submitBtn">Add Product</button>
+        <button type="button" id="cancelBtn" style="display:none;background:#777;" onclick="cancelEdit()">Cancel</button>
+    </form>
+
+    <h2 style="margin-top:30px;">Your Products 📦</h2>
+    <div id="productContainer"></div>
+</div>
+
+<script>
+const API_URL = "http://localhost:5000";
+
+let products = [];
+let editId = null;
+
+function logout(){
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+function getToken(){
+    return localStorage.getItem('token');
+}
+
+function displayProducts() {
+    const container = document.getElementById("productContainer");
+    container.innerHTML = "";
+
+    if(products.length === 0){
+        container.innerHTML = "<p>No products yet. Add one above!</p>";
+        return;
+    }
+
+    products.forEach(p => {
+        const imageUrl = p.image_filename ? `${API_URL}/uploads/${p.image_filename}` : 'https://via.placeholder.com/100?text=No+Image';
+        
+        const card = document.createElement("div");
+        card.classList.add("product-card");
+        card.classList.add(p.approval_status || 'pending');
+
+        let approvalBadge = '';
+        if(p.approval_status) {
+            approvalBadge = `
+                <div class="approval-badge approval-${p.approval_status}">
+                    ${p.approval_status}
+                </div>
+            `;
+            if(p.approval_comment) {
+                approvalBadge += `<div class="approval-comment">Comment: ${p.approval_comment}</div>`;
+            }
+        } else {
+            approvalBadge = '<div class="approval-badge approval-pending">PENDING</div>';
+        }
+
+        card.innerHTML = `
+            <img src="${imageUrl}" alt="${p.productname}" class="product-image" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
+            <div class="product-info">
+                <div class="title">${p.productname}</div>
+                <p>${p.productdescription}</p>
+                <p>Contact: ${p.seller_phone || 'N/A'}</p>
+                <p class="price">Price: ₹${parseFloat(p.price).toFixed(2)}</p>
+                <p>Quantity: ${p.quantity} </p>
+                ${approvalBadge}
+                <div>
+                    <button class="edit-btn" onclick="editProduct(${p.product_id})">Edit</button>
+                    <button class="delete-btn" onclick="deleteProduct(${p.product_id})">Delete</button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+async function loadProducts() {
+    try {
+        const response = await fetch(`${API_URL}/my-products`, {
+            method: 'GET',
+            headers: {'Authorization': `Bearer ${getToken()}`}
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            showError(err.error || "Failed to load products");
+            return;
+        }
+        const data = await response.json();
+        products = data;
+        displayProducts();
+    } catch(e) {
+        showError("Failed to load products: " + e.message);
+    }
+}
+
+function editProduct(id){
+    const p = products.find(item => item.product_id === id);
+    editId = id;
+
+    document.getElementById("pname").value = p.productname;
+    document.getElementById("pdesc").value = p.productdescription;
+    document.getElementById("pphone").value = p.seller_phone || '';
+    document.getElementById("pprice").value = p.price;
+    document.getElementById("pcount").value = p.quantity;
+    document.getElementById("pimage").value = '';
+    document.getElementById("imagePreview").style.display = 'none';
+
+    document.getElementById("submitBtn").innerText = "Update Product";
+    document.getElementById("cancelBtn").style.display = "inline-block";
+    document.getElementById("formTitle").innerText = "Edit Product ✏️";
+    window.scrollTo(0, 0);
+}
+
+function cancelEdit(){
+    editId = null;
+    document.getElementById("addProductForm").reset();
+    document.getElementById("submitBtn").innerText = "Add Product";
+    document.getElementById("cancelBtn").style.display = "none";
+    document.getElementById("formTitle").innerText = "Add New Product 🧑‍🌾";
+    document.getElementById("imagePreview").style.display = 'none';
+}
+
+async function deleteProduct(id){
+    if(!confirm("Are you sure you want to delete this product?")) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/products/${id}`, {
+            method: 'DELETE',
+            headers: {'Authorization': `Bearer ${getToken()}`}
+        });
+        
+        if(response.ok){
+            loadProducts();
+            showSuccess("Product deleted successfully!");
+        } else {
+            showError("Failed to delete product!");
+        }
+    } catch(e) {
+        showError("Connection error: " + e.message);
+    }
+}
+
+// Image preview
+document.getElementById("pimage").addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(event){
+            const preview = document.getElementById("imagePreview");
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById("addProductForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const name = document.getElementById("pname").value;
+    const desc = document.getElementById("pdesc").value;
+    const price = document.getElementById("pprice").value;
+    const count = document.getElementById("pcount").value;
+    const imageFile = document.getElementById("pimage").files[0];
+    const phone = document.getElementById("pphone").value || '';
+
+    const formData = new FormData();
+    formData.append('productname', name);
+    formData.append('productdescription', desc);
+    formData.append('seller_phone', phone);
+    formData.append('price', price);
+    formData.append('quantity', count);
+    if(imageFile){
+        formData.append('image', imageFile);
+    }
+
+    try {
+        if(editId !== null){
+            // UPDATE
+            const response = await fetch(`${API_URL}/products/${editId}`, {
+                method: 'PUT',
+                headers: {'Authorization': `Bearer ${getToken()}`},
+                body: formData
+            });
+
+            if(response.ok){
+                showSuccess("Product updated successfully!");
+                cancelEdit();
+                loadProducts();
+            } else {
+                const err = await response.json();
+                showError(err.error || "Failed to update product!");
+            }
+        } else {
+            // ADD NEW
+            const response = await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: {'Authorization': `Bearer ${getToken()}`},
+                body: formData
+            });
+
+            if(response.ok){
+                showSuccess("Product added successfully!");
+                loadProducts();
+            } else {
+                const err = await response.json();
+                showError(err.error || "Failed to add product!");
+            }
+        }
+    } catch(e) {
+        showError("Connection error: " + e.message);
+    }
+
+    document.getElementById("addProductForm").reset();
+    document.getElementById("imagePreview").style.display = 'none';
+});
+
+function showError(msg){
+    const err = document.getElementById("formError");
+    err.innerText = msg;
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 4000);
+}
+
+function showSuccess(msg){
+    const succ = document.getElementById("formSuccess");
+    succ.innerText = msg;
+    succ.style.display = 'block';
+    setTimeout(() => succ.style.display = 'none', 3000);
+}
+
+// Load products on page load
+loadProducts();
+
+</script>
+
+</body>
+</html>  
