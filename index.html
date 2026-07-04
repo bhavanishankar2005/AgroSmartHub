@@ -202,7 +202,7 @@ function login(){
         return;
     }
     
-    fetch('http://localhost:5000/login', {
+    fetch('https://light-rat-68.loca.lt/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password})
@@ -247,7 +247,7 @@ function register(){
         return;
     }
     
-    fetch('http://localhost:5000/register', {
+    fetch('https://light-rat-68.loca.lt/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, password, phonenumber: phone, role})
@@ -287,7 +287,7 @@ function sendResetToken(){
         return;
     }
     
-    fetch('http://localhost:5000/forgot-password', {
+    fetch('https://light-rat-68.loca.lt/forgot-password', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username})
@@ -325,7 +325,7 @@ function adminLogin(){
         return;
     }
     
-    fetch('http://localhost:5000/admin/login', {
+    fetch('https://light-rat-68.loca.lt/admin/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({password})
@@ -363,7 +363,7 @@ function resetPassword(){
         return;
     }
     
-    fetch('http://localhost:5000/reset-password', {
+    fetch('https://light-rat-68.loca.lt/reset-password', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({username, token, password: newPass})
